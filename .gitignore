@@ -1,0 +1,42 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Data & Models (Do not commit large files)
+data/
+*.pkl
+*.csv
+*.onnx
+
+# Exceptions for resources we WANT to deploy
+!fraud-backend/src/main/resources/*.onnx
+
+# Java / Spring Boot
+target/
+fraud-backend/target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.mvn/
+mvnw
+mvnw.cmd
+.springBeans
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+
+# Docker
+.docker/

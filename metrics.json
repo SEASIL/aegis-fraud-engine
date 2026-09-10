@@ -1,0 +1,23 @@
+{
+    "Logistic_Regression": {
+        "Precision": 0.0751,
+        "Recall": 0.6046,
+        "F1_Score": 0.1335,
+        "AUC_ROC": 0.6931,
+        "PR_AUC": 0.0836
+    },
+    "Random_Forest": {
+        "Precision": 0.1223,
+        "Recall": 0.6301,
+        "F1_Score": 0.2049,
+        "AUC_ROC": 0.8172,
+        "PR_AUC": 0.2121
+    },
+    "XGBoost": {
+        "Precision": 0.1305,
+        "Recall": 0.7343,
+        "F1_Score": 0.2216,
+        "AUC_ROC": 0.8596,
+        "PR_AUC": 0.2674
+    }
+}
