@@ -1,4 +1,4 @@
-# Classical ML System: Fraud Detection Pipeline
+# Aegis Fraud Engine
 
 An end-to-end Machine Learning pipeline that detects fraudulent transactions. This project demonstrates a complete ML lifecycle: data engineering from a relational database, model training with Python, model serialization via ONNX, and deploying a REST API wrapped in a Java Spring Boot backend that logs to a NoSQL database.
 
