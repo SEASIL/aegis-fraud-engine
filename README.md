@@ -29,6 +29,7 @@ Every time you tap your card at a store or make an online payment, your bank run
 | **Velocity Fraud** | Catches abnormally high transaction counts within a 24-hour window |
 | **Rare Domain Attacks** | Identifies transactions from email domains that are statistically unusual |
 | **Real-time Decisioning** | Scores each transaction in milliseconds via a REST API — fast enough to block fraud *before* the payment clears |
+| **Audit & Compliance** | Every prediction is logged to MongoDB with full request/response payload for regulatory review |
 
 ### How a real bank would integrate this:
 ```
@@ -50,10 +51,50 @@ Every decision logged to MongoDB for compliance & auditing
 - **Data Layer**: PostgreSQL (stores 590k+ raw transactions and engineered features)
 - **Feature Engineering**: Python, Pandas, SQLAlchemy
 - **Modeling Pipeline**: Scikit-Learn, XGBoost, ONNXMLTools
-- **Backend API**: Java 17, Spring Boot, ONNX Runtime (JVM)
-- **Frontend UI**: Single Page Application (HTML/CSS/JS) embedded in Spring Boot for live transaction simulation
-- **Inference Logging**: MongoDB (asynchronously logs requests/responses)
+- **Backend API**: Java 17, Spring Boot 4, ONNX Runtime (JVM)
+- **Frontend UI**: Single Page Application (HTML/CSS/JS) embedded in Spring Boot
+- **Inference Logging**: MongoDB Atlas (`inference_logs` collection)
 - **Infrastructure**: Docker & Docker Compose, Render PaaS, MongoDB Atlas
+
+### Why ONNX instead of a Python microservice?
+Most ML systems deploy models by running a separate Python Flask/FastAPI server alongside the main backend. Aegis takes a different approach — the XGBoost model is **converted to ONNX format and embedded directly into the Java JVM**. This eliminates:
+- Network round-trips between services (~10-50ms saved per request)
+- Python's GIL bottleneck under concurrent load
+- A second container to maintain and monitor
+
+---
+
+## 📁 Project Structure
+
+```
+fraud_detection_ml/
+├── data/raw/ieee-fraud-detection/   # Kaggle dataset (590k transactions)
+├── download_data.py                 # Kaggle API downloader
+├── load_data_to_postgres.py         # Loads raw CSV → PostgreSQL
+├── feature_engineering.py          # Builds 7 engineered features
+├── train_models.py                  # Trains & evaluates 3 ML models
+├── convert_to_onnx.py              # Converts XGBoost winner → ONNX
+├── retrain.sh                      # Full pipeline automation script
+├── metrics.json                    # Latest model evaluation results
+├── XGBoost.onnx                    # Serialized production model
+├── XGBoost.pkl                     # Scikit-learn pickle backup
+├── docker-compose.yml              # Local dev stack (Postgres + Mongo + API)
+├── render.yaml                     # Render Blueprint for 1-click cloud deploy
+└── fraud-backend/                  # Spring Boot Java API
+    ├── src/main/java/com/example/fraudbackend/
+    │   ├── FraudBackendApplication.java       # App entry point
+    │   ├── FraudDetectionController.java      # REST endpoints
+    │   ├── FraudDetectionService.java         # ONNX inference engine
+    │   ├── MongoConfig.java                   # MongoDB programmatic config
+    │   ├── InferenceLog.java                  # MongoDB document model
+    │   ├── InferenceLogRepository.java        # Spring Data repository
+    │   ├── FraudPredictionRequest.java        # API request schema
+    │   └── FraudPredictionResponse.java       # API response schema
+    └── src/main/resources/
+        ├── XGBoost.onnx                       # Embedded production model
+        ├── metrics.json                       # Model metrics (served via API)
+        └── static/                            # Web dashboard (HTML/CSS/JS)
+```
 
 ---
 
@@ -69,43 +110,38 @@ Because the dataset is highly imbalanced (<3.5% fraud), we opted for **explicit 
 | **Random Forest** | 0.1223 | 0.6301 | 0.2049 | 0.8172 | 0.2121 |
 | **XGBoost (Winner)** | **0.1305** | **0.7343** | **0.2216** | **0.8596** | **0.2674** |
 
-> The winning XGBoost model is serialized into `.onnx` format and **hot-loaded directly into the Java backend**, eliminating the need for a separate Python microservice and reducing inference latency to under 5ms.
+> The winning XGBoost model is serialized into `.onnx` format and hot-loaded directly into the Java backend, eliminating the need for a separate Python microservice and reducing inference latency to under 5ms.
 
 ---
 
-## 🚀 Local Setup & Usage
+## 🔬 Engineered Features
 
-### 1. Start the Full Stack
-Ensure Docker Desktop is running, then spin up the PostgreSQL, MongoDB, and the Spring Boot API backend:
+The model does not use raw transaction fields. Instead, 7 statistical features are computed from the raw data — the same features a bank's data pipeline would generate automatically:
+
+| Feature | Description | Fraud Signal |
+|---|---|---|
+| `transactionAmt` | Dollar amount of the transaction | Very high or very low amounts are suspicious |
+| `card1` | Anonymized card identifier | Used for grouping card behaviour |
+| `pEmaildomainFreq` | How common the buyer's email domain is (0–1) | Rare domains (near 0) are high-risk |
+| `card4Freq` | How common the card network is (Visa/MC/etc.) | Rare card networks are suspicious |
+| `productCdFreq` | How common the product category is | Unusual product categories flag risk |
+| `amtZScoreCard1` | Standard deviations from this card's normal spend | High Z-score = unusually large purchase |
+| `cardTxCount24h` | Number of transactions on this card in 24 hours | High count = velocity/card-testing attack |
+
+---
+
+## 🌐 API Reference
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/predict` | Score a transaction and return fraud probability |
+| `GET` | `/api/logs` | Retrieve the 20 most recent inference logs from MongoDB |
+| `GET` | `/metrics` | Return model evaluation metrics (Precision, Recall, AUC) |
+| `GET` | `/actuator/health` | Health check endpoint |
+
+### Example — Predict
 ```bash
-docker-compose up -d --build
-```
-The API and Web Dashboard will instantly be available at `http://localhost:8080/`.
-
-### 2. Data Pipeline & Modeling
-Download the IEEE-CIS Fraud Detection dataset from Kaggle and extract `train_transaction.csv` into `data/raw/ieee-fraud-detection/`.
-
-Create a Python virtual environment, install requirements, and run the pipeline:
-```bash
-pip install -r requirements.txt
-python load_data_to_postgres.py
-python feature_engineering.py
-python train_models.py
-python convert_to_onnx.py
-```
-
-### 3. Start the Spring Boot API (Manual Alternative)
-```bash
-cd fraud-backend
-./mvnw spring-boot:run
-```
-
-### 4. Interactive Web Dashboard
-Open your browser to `http://localhost:8080/` to access the **Interactive Fraud Simulator**. Select a real-world fraud scenario (Stolen Card, Account Takeover, Normal Purchase, etc.) and see the model score it in real-time.
-
-### 5. Call the API directly
-```bash
-curl -X POST http://localhost:8080/predict \
+curl -X POST https://aegis-fraud-backend.onrender.com/predict \
      -H "Content-Type: application/json" \
      -d '{
            "transactionAmt": 4500,
@@ -117,7 +153,6 @@ curl -X POST http://localhost:8080/predict \
            "cardTxCount24h": 31
          }'
 ```
-
 **Response:**
 ```json
 {
@@ -125,13 +160,82 @@ curl -X POST http://localhost:8080/predict \
   "isFraud": true
 }
 ```
-*Every prediction is automatically logged into the `inference_logs` collection in MongoDB for audit compliance.*
+
+### MongoDB Audit Log Schema
+Every prediction is saved to the `inference_logs` collection:
+```json
+{
+  "_id": "ObjectId(...)",
+  "timestamp": "2026-09-12T15:35:22Z",
+  "request": {
+    "transactionAmt": 4500,
+    "card1": 1234,
+    "pEmaildomainFreq": 0.0005,
+    "amtZScoreCard1": 8.7,
+    "cardTxCount24h": 31
+  },
+  "response": {
+    "fraudProbability": 0.921,
+    "isFraud": true
+  }
+}
+```
+
+---
+
+## 🚀 Local Setup & Usage
+
+### Prerequisites
+- Docker Desktop
+- Python 3.9+
+- Java 17
+- Kaggle API key (`~/.kaggle/kaggle.json`)
+
+### 1. Download the Dataset
+```bash
+python download_data.py
+```
+This uses the Kaggle API to automatically download and extract the IEEE-CIS Fraud Detection dataset into `data/raw/`.
+
+### 2. Start the Full Stack
+```bash
+docker-compose up -d --build
+```
+Starts PostgreSQL (port 5432), MongoDB (port 27017), and the Spring Boot API (port 8080) in Docker.
+
+### 3. Run the ML Pipeline
+```bash
+pip install -r requirements.txt
+python load_data_to_postgres.py   # Load raw CSV → PostgreSQL
+python feature_engineering.py     # Compute 7 features → write back to PostgreSQL
+python train_models.py            # Train 3 models, save metrics.json + XGBoost.pkl
+python convert_to_onnx.py         # Convert XGBoost → XGBoost.onnx
+```
+
+### 4. Open the Dashboard
+Visit `http://localhost:8080/` to access the **Interactive Fraud Simulator**.
+
+---
+
+## 🔄 Retraining the Model
+
+A single script automates the full retrain-and-deploy cycle:
+```bash
+bash retrain.sh
+```
+This script runs all 4 pipeline stages in sequence:
+1. Feature engineering on fresh data
+2. Model retraining (all 3 models re-evaluated)
+3. Winning model converted to ONNX
+4. New `XGBoost.onnx` and `metrics.json` hot-swapped into the backend resources
+
+Then restart the container to load the new model:
+```bash
+docker restart fraud_backend_api
+```
 
 ---
 
 ## ☁️ Cloud Deployment
 
 A complete guide for deploying this project for free using **Render** and **MongoDB Atlas** is available in [HOSTING_GUIDE.md](HOSTING_GUIDE.md). The project includes a `render.yaml` blueprint for one-click deployment.
-
-## 🔄 Automation
-A `retrain.sh` bash script is included to automatically pull new data, engineer features, retrain the models, convert the winner to ONNX, and hot-swap the weights into the Spring Boot resource folder.
