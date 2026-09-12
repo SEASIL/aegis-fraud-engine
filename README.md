@@ -9,10 +9,11 @@
 <!-- Tech Stack Badges -->
 ![Python](https://img.shields.io/badge/ML_Pipeline-Python-3776AB?style=flat-square&logo=python&logoColor=white)
 ![XGBoost](https://img.shields.io/badge/Model-XGBoost_ONNX-189AB4?style=flat-square&logo=xgboost&logoColor=white)
+![Java](https://img.shields.io/badge/Java-17-ED8B00?style=flat-square&logo=java&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Backend-Spring_Boot_4-6DB33F?style=flat-square&logo=springboot&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/Database-MongoDB_Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white)
 ![Docker](https://img.shields.io/badge/Deployment-Docker_+_Render-2496ED?style=flat-square&logo=docker&logoColor=white)
-![Java](https://img.shields.io/badge/Runtime-Java_17-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/Data-PostgreSQL-336791?style=flat-square&logo=postgresql&logoColor=white)
 
 ---
 
