@@ -4,7 +4,6 @@ services:
     env: docker
     rootDir: fraud-backend
     plan: free
-    healthCheckPath: /actuator/health
     envVars:
       - key: SPRING_DATA_MONGODB_URI
         sync: false # User must provide this in the Render dashboard
