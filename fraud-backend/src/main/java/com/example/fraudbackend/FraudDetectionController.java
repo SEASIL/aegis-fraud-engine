@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "*")
 public class FraudDetectionController {
 
     @Autowired
@@ -31,7 +33,12 @@ public class FraudDetectionController {
             FraudPredictionResponse response = new FraudPredictionResponse(prob, isFraud);
             
             // Log to MongoDB asynchronously (or synchronously for this project)
-            inferenceLogRepository.save(new InferenceLog(request, response));
+            try {
+                inferenceLogRepository.save(new InferenceLog(request, response));
+            } catch (Exception e) {
+                System.err.println("Warning: Failed to log inference to MongoDB: " + e.getMessage());
+                // Continue to return prediction even if DB logging fails
+            }
             
             return ResponseEntity.ok(response);
             
@@ -46,5 +53,15 @@ public class FraudDetectionController {
         ClassPathResource resource = new ClassPathResource("metrics.json");
         String metricsStr = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
         return ResponseEntity.ok().header("Content-Type", "application/json").body(metricsStr);
+    }
+
+    @GetMapping("/api/logs")
+    public ResponseEntity<List<InferenceLog>> getRecentLogs() {
+        try {
+            return ResponseEntity.ok(inferenceLogRepository.findTop20ByOrderByTimestampDesc());
+        } catch (Exception e) {
+            System.err.println("Warning: Failed to fetch logs from MongoDB: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

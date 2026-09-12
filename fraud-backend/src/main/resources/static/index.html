@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis Fraud Detection Engine</title>
+    <meta name="description" content="Interactive demo for the Aegis Machine Learning Fraud Detection Engine.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon"></div>
+                <h1>Aegis Fraud Engine</h1>
+            </div>
+            <div class="status-badges">
+                <span class="badge active"><span class="dot"></span> ONNX Runtime Active</span>
+                <span class="badge model">XGBoost (AUC: 0.86)</span>
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <!-- Left Column: Input Form -->
+            <section class="card input-section">
+                <h2>Transaction Simulator</h2>
+                <p class="subtitle">Enter transaction features to run live inference.</p>
+                
+                <div class="presets-container">
+                    <button class="preset-btn" id="preset-normal" onclick="loadPreset('normal')">☕ Normal Coffee</button>
+                    <button class="preset-btn warning" id="preset-spike" onclick="loadPreset('spike')">🚨 Velocity Spike</button>
+                    <button class="preset-btn danger" id="preset-probe" onclick="loadPreset('probe')">💳 Card Testing</button>
+                </div>
+
+                <form id="prediction-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="transactionAmt">Transaction Amount ($)</label>
+                            <input type="number" id="transactionAmt" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="card1">Card 1 ID</label>
+                            <input type="number" id="card1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pEmaildomainFreq">Email Domain Freq</label>
+                            <input type="number" id="pEmaildomainFreq" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="card4Freq">Card 4 Network Freq</label>
+                            <input type="number" id="card4Freq" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productCdFreq">Product Code Freq</label>
+                            <input type="number" id="productCdFreq" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="amtZScoreCard1">Amount Z-Score</label>
+                            <input type="number" id="amtZScoreCard1" step="0.01" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="cardTxCount24h">Card 24h Tx Count</label>
+                            <input type="number" id="cardTxCount24h" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn" id="submit-btn">Run Fraud Check</button>
+                </form>
+            </section>
+
+            <!-- Right Column: Results & Logs -->
+            <div class="right-column">
+                <!-- Gauge Section -->
+                <section class="card result-section">
+                    <h2>Risk Assessment</h2>
+                    <div class="gauge-container">
+                        <div class="gauge-ring">
+                            <svg viewBox="0 0 100 100" class="circular-chart">
+                                <path class="circle-bg"
+                                  d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                />
+                                <path class="circle" id="risk-circle"
+                                  stroke-dasharray="0, 100"
+                                  d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                />
+                                <text x="18" y="20.35" class="percentage" id="risk-percentage">0%</text>
+                            </svg>
+                        </div>
+                        <div class="risk-details">
+                            <h3 id="risk-status">Awaiting Input</h3>
+                            <p id="latency-text">--</p>
+                        </div>
+                    </div>
+                    <div class="api-snippet">
+                        <h4>API cURL Command</h4>
+                        <div class="code-block">
+                            <code id="curl-code">curl -X POST /predict ...</code>
+                            <button class="copy-btn" id="copy-btn" onclick="copyCurl()">Copy</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Audit Logs Section -->
+                <section class="card logs-section">
+                    <div class="logs-header">
+                        <h2>Live Audit Logs</h2>
+                        <button class="refresh-btn" onclick="fetchLogs()">⟳</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="logs-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Amount</th>
+                                    <th>Risk Score</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-body">
+                                <tr>
+                                    <td colspan="4" class="text-center">Loading logs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

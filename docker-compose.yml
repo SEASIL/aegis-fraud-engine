@@ -28,6 +28,16 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+  backend:
+    build: ./fraud-backend
+    container_name: fraud_backend_api
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/fraud_inference
+    depends_on:
+      - mongodb
+
 volumes:
   postgres_data:
   mongodb_data:
