@@ -26,9 +26,6 @@ fraud-backend/target/
 *.war
 *.ear
 *.log
-.mvn/
-mvnw
-mvnw.cmd
 .springBeans
 
 # IDEs
