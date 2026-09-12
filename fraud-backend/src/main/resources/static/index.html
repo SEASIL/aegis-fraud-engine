@@ -26,16 +26,56 @@
             <!-- Left Column: Input Form -->
             <section class="card input-section">
                 <h2>Transaction Simulator</h2>
-                <p class="subtitle">Enter transaction features to run live inference.</p>
-                
-                <div class="presets-container">
-                    <button class="preset-btn" id="preset-normal" onclick="loadPreset('normal')">☕ Normal Coffee</button>
-                    <button class="preset-btn warning" id="preset-spike" onclick="loadPreset('spike')">🚨 Velocity Spike</button>
-                    <button class="preset-btn danger" id="preset-probe" onclick="loadPreset('probe')">💳 Card Testing</button>
+                <p class="subtitle">Select a real-world fraud scenario to test the model.</p>
+
+                <!-- Scenario Picker -->
+                <div class="scenario-grid">
+                    <button class="scenario-btn active" id="scenario-coffee" onclick="selectScenario('coffee')">
+                        <span class="scenario-icon">☕</span>
+                        <span class="scenario-title">Normal Coffee</span>
+                        <span class="scenario-desc">$15 Starbucks purchase, familiar card</span>
+                        <span class="scenario-tag safe">LOW RISK</span>
+                    </button>
+                    <button class="scenario-btn" id="scenario-shopping" onclick="selectScenario('shopping')">
+                        <span class="scenario-icon">🛍️</span>
+                        <span class="scenario-title">Online Shopping</span>
+                        <span class="scenario-desc">$120 Amazon order, Gmail account</span>
+                        <span class="scenario-tag safe">LOW RISK</span>
+                    </button>
+                    <button class="scenario-btn" id="scenario-stolen" onclick="selectScenario('stolen')">
+                        <span class="scenario-icon">🚨</span>
+                        <span class="scenario-title">Stolen Card</span>
+                        <span class="scenario-desc">47 small charges in 1 hour — card testing attack</span>
+                        <span class="scenario-tag fraud">HIGH RISK</span>
+                    </button>
+                    <button class="scenario-btn" id="scenario-takeover" onclick="selectScenario('takeover')">
+                        <span class="scenario-icon">💸</span>
+                        <span class="scenario-title">Account Takeover</span>
+                        <span class="scenario-desc">$4,500 charge, burner email, 8x above normal spend</span>
+                        <span class="scenario-tag fraud">HIGH RISK</span>
+                    </button>
+                    <button class="scenario-btn" id="scenario-international" onclick="selectScenario('international')">
+                        <span class="scenario-icon">🌍</span>
+                        <span class="scenario-title">Suspicious Transfer</span>
+                        <span class="scenario-desc">$999 charge, rare domain, unusual card network</span>
+                        <span class="scenario-tag warning">MEDIUM RISK</span>
+                    </button>
+                    <button class="scenario-btn" id="scenario-custom" onclick="selectScenario('custom')">
+                        <span class="scenario-icon">⚙️</span>
+                        <span class="scenario-title">Custom (Advanced)</span>
+                        <span class="scenario-desc">Manually enter ML feature values</span>
+                        <span class="scenario-tag neutral">MANUAL</span>
+                    </button>
                 </div>
 
+                <!-- Scenario Description Banner -->
+                <div class="scenario-banner" id="scenario-banner">
+                    <p id="scenario-story"></p>
+                </div>
+
+                <!-- Technical Fields (hidden by default, shown for Custom) -->
                 <form id="prediction-form">
-                    <div class="form-grid">
+                    <div class="form-grid" id="technical-fields" style="display:none;">
                         <div class="form-group">
                             <label for="transactionAmt">Transaction Amount ($)</label>
                             <input type="number" id="transactionAmt" step="any" required>
@@ -65,6 +105,14 @@
                             <input type="number" id="cardTxCount24h" required>
                         </div>
                     </div>
+
+                    <!-- Under the Hood (collapsed by default) -->
+                    <details class="under-hood" id="under-hood-details">
+                        <summary>⚙️ Under the Hood — Feature Values</summary>
+                        <div class="hood-grid" id="hood-values"></div>
+                        <p class="hood-note">These 7 engineered features are extracted from raw transaction data and fed into the XGBoost ONNX model for real-time inference.</p>
+                    </details>
+
                     <button type="submit" class="submit-btn" id="submit-btn">Run Fraud Check</button>
                 </form>
             </section>
